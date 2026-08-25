@@ -85,19 +85,68 @@ Vous repartez **chacun·e** du repo binôme, dans une branche perso
 
 ---
 
-## 🚀 Démarrage (le service `model` tourne déjà)
+## 🏗️ Architecture
+
+```mermaid
+flowchart LR
+    U["👤 Navigateur"]
+
+    subgraph stack["docker compose"]
+        F["frontend<br/>nginx<br/>:8088 → 80"]
+        B["backend<br/>FastAPI orchestrateur<br/>:8001"]
+        M["model<br/>FastAPI + joblib<br/>:8000"]
+        P["prometheus<br/>:9090"]
+        G["grafana<br/>:3001 → 3000"]
+    end
+
+    U -->|"HTTP"| F
+    F -->|"proxy /api/ → /"| B
+    B -->|"POST /predict"| M
+    P -.->|"scrape /metrics · 5s"| B
+    P -.->|"scrape /metrics · 5s"| M
+    G -->|"PromQL"| P
+```
+
+**Ordre de démarrage** — chaque service attend que le précédent soit `healthy` :
+`model` → `backend` → `frontend`. C'est `depends_on: condition: service_healthy`
+qui le garantit, pas un `sleep`.
+
+**Le frontend ne parle jamais au model.** Il passe par nginx, qui proxifie vers
+le backend, qui seul connaît le model. Le model est un service **interne** : il
+n'a pas de CORS et n'est pas censé être joignable depuis le navigateur.
+
+| Service | Port hôte | Rôle |
+|---|---|---|
+| `frontend` | **8088** | page HTML/JS + reverse-proxy `/api/` |
+| `backend` | 8001 | valide, orchestre, expose `/score` et `/metrics` |
+| `model` | 8000 | scoring `pyrenex_risk_v2`, `/predict` et `/metrics` |
+| `prometheus` | 9090 | scrape `model` et `backend` |
+| `grafana` | **3001** | dashboard `Pyrenex Prod` (admin/admin) |
+
+---
+
+## 🚀 Démarrage en 3 commandes
 
 ```bash
-# 1. Environnement de tests local (optionnel mais conseillé)
+# 1. Lancer toute la stack
+docker compose up --build -d
+
+# 2. Vérifier que les 3 services sont healthy
+docker compose ps
+
+# 3. Ouvrir le formulaire
+#    http://localhost:8088   — scoring
+#    http://localhost:3001   — dashboard Grafana (admin/admin)
+```
+
+<details><summary>Tests en local (optionnel)</summary>
+
+```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-dev.txt
-
-# 2. Vérifier que la base fournie passe les tests
 pytest -v services/model/tests
-
-# 3. Lancer ce qui est déjà câblé (model + prometheus + grafana)
-docker compose up --build
 ```
+</details>
 
 > 🧰 **Avec `uv`** : `uv venv && source .venv/bin/activate` puis
 > **`uv pip install -r requirements-dev.txt`**.
@@ -107,8 +156,7 @@ docker compose up --build
 > ⚠️ **Ports hôte** : frontend **8088** (pas 8080), Grafana **3001** (pas 3000)
 > — pour éviter les conflits courants. Model 8000, backend 8001, Prometheus 9090.
 
-Au départ, seuls `model`, `prometheus` et `grafana` démarrent : à vous
-d'ajouter `backend` + `frontend` et de compléter le reste (cf. TODO).
+Les 5 services démarrent et les 3 services applicatifs passent `healthy`.
 
 ---
 
@@ -117,12 +165,12 @@ d'ajouter `backend` + `frontend` et de compléter le reste (cf. TODO).
 ```
 services/
   model/        # FOURNI — API scoring M1-B2 + /metrics (ne pas réécrire)
-  backend/      # À COMPLÉTER — orchestrateur
-  frontend/     # À COMPLÉTER — formulaire nginx
+  backend/      # orchestrateur — /score, /health, /metrics
+  frontend/     # formulaire nginx 14 champs + proxy /api/
 prometheus/     # FOURNI — scrape config
 grafana/provisioning/
   datasources/  # FOURNI — datasource Prometheus
-  dashboards/   # provider fourni ; le dashboard JSON = à vous (tâche 9)
+  dashboards/   # provider fourni + pyrenex_prod.json (4 panels)
 .github/workflows/ci.yml   # squelette (job test fourni)
 runbook.md                 # template 4 sections
 scripts/evaluate_model_TEMPLATE.py   # B2 — MLflow pré-câblé
