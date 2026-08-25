@@ -8,34 +8,158 @@
     body { font-family: system-ui, sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; }
     label { display: block; margin: .4rem 0 .1rem; font-size: .9rem; }
     input, select { width: 100%; padding: .4rem; box-sizing: border-box; }
-    button { padding: .6rem 1.2rem; font-size: 1rem; cursor: pointer; }
+    button { padding: .6rem 1.2rem; font-size: 1rem; cursor: pointer; margin-top: 1rem; }
+    button[disabled] { opacity: .6; cursor: progress; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1rem; }
     #result { margin-top: 1rem; padding: 1rem; border-radius: 8px; display: none; }
     .ok { background: #e6f4ea; } .ko { background: #fce8e6; }
+    #result h2 { margin: 0 0 .4rem; font-size: 1.1rem; }
+    #result p { margin: .2rem 0; }
   </style>
 </head>
 <body>
   <h1>Pyrenex Crédit — Évaluation du risque de défaut</h1>
 
-  <!-- TODO 1 — construire le formulaire avec les 14 champs de LoanApplication
-       (cf. services/*/app/schemas.py) : loan_amnt, int_rate, installment,
-       annual_inc, dti, delinq_2yrs, fico_range_low, revol_util (numériques)
-       + term, grade, home_ownership, verification_status, purpose, emp_length. -->
   <form id="scoreForm">
-    <!-- … champs à compléter … -->
+    <div class="grid">
+      <div>
+        <label for="loan_amnt">Montant du prêt (USD)</label>
+        <input id="loan_amnt" name="loan_amnt" type="number" step="100" min="500" max="40000" value="18900" required>
+      </div>
+      <div>
+        <label for="int_rate">Taux d'intérêt (%)</label>
+        <input id="int_rate" name="int_rate" type="number" step="0.01" min="0" max="50" value="12.51" required>
+      </div>
+      <div>
+        <label for="installment">Mensualité (USD)</label>
+        <input id="installment" name="installment" type="number" step="0.01" min="0" max="2000" value="632.36" required>
+      </div>
+      <div>
+        <label for="annual_inc">Revenu annuel (USD)</label>
+        <input id="annual_inc" name="annual_inc" type="number" step="100" min="0" max="10000000" value="26900" required>
+      </div>
+      <div>
+        <label for="dti">Ratio dette/revenu (DTI)</label>
+        <input id="dti" name="dti" type="number" step="0.01" min="0" max="200" value="13.12" required>
+      </div>
+      <div>
+        <label for="delinq_2yrs">Incidents de paiement (2 ans)</label>
+        <input id="delinq_2yrs" name="delinq_2yrs" type="number" step="1" min="0" max="50" value="0" required>
+      </div>
+      <div>
+        <label for="fico_range_low">Score FICO (borne basse)</label>
+        <input id="fico_range_low" name="fico_range_low" type="number" step="1" min="300" max="850" value="707" required>
+      </div>
+      <div>
+        <label for="revol_util">Utilisation du crédit renouvelable (%)</label>
+        <input id="revol_util" name="revol_util" type="number" step="0.1" min="0" max="300" value="69.5" required>
+      </div>
+      <div>
+        <label for="term">Durée</label>
+        <select id="term" name="term" required>
+          <option>36 months</option>
+          <option>60 months</option>
+        </select>
+      </div>
+      <div>
+        <label for="grade">Grade</label>
+        <select id="grade" name="grade" required>
+          <option>A</option><option>B</option><option selected>C</option><option>D</option>
+          <option>E</option><option>F</option><option>G</option>
+        </select>
+      </div>
+      <div>
+        <label for="home_ownership">Statut du logement</label>
+        <select id="home_ownership" name="home_ownership" required>
+          <option>RENT</option><option selected>MORTGAGE</option><option>OWN</option>
+          <option>OTHER</option><option>NONE</option><option>ANY</option>
+        </select>
+      </div>
+      <div>
+        <label for="verification_status">Vérification des revenus</label>
+        <select id="verification_status" name="verification_status" required>
+          <option selected>Verified</option>
+          <option>Source Verified</option>
+          <option>Not Verified</option>
+        </select>
+      </div>
+      <div>
+        <label for="purpose">Objet du prêt</label>
+        <select id="purpose" name="purpose" required>
+          <option>debt_consolidation</option><option>credit_card</option>
+          <option>home_improvement</option><option>major_purchase</option>
+          <option>medical</option><option selected>small_business</option>
+          <option>car</option><option>moving</option><option>vacation</option>
+          <option>house</option><option>renewable_energy</option>
+          <option>educational</option><option>wedding</option><option>other</option>
+        </select>
+      </div>
+      <div>
+        <label for="emp_length">Ancienneté professionnelle</label>
+        <select id="emp_length" name="emp_length" required>
+          <option>&lt; 1 year</option><option>1 year</option><option>2 years</option>
+          <option>3 years</option><option>4 years</option><option>5 years</option>
+          <option>6 years</option><option>7 years</option><option>8 years</option>
+          <option>9 years</option><option selected>10+ years</option>
+        </select>
+      </div>
+    </div>
     <button type="submit">Évaluer le risque</button>
   </form>
 
   <div id="result"></div>
 
   <script>
+    const NUMERIC = [
+      'loan_amnt', 'int_rate', 'installment', 'annual_inc',
+      'dti', 'delinq_2yrs', 'fico_range_low', 'revol_util',
+    ];
+
     const form = document.getElementById('scoreForm');
     const result = document.getElementById('result');
+    const button = form.querySelector('button');
+
+    function show(className, html) {
+      result.className = className;
+      result.innerHTML = html;
+      result.style.display = 'block';
+    }
+
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      // TODO 2 — construire le payload JSON depuis le formulaire
-      //   (penser à convertir les champs numériques en Number).
-      // TODO 3 — POST vers /api/score (même origine grâce au proxy nginx),
-      //   afficher prediction + probability, gérer les erreurs.
+      button.disabled = true;
+
+      const payload = Object.fromEntries(new FormData(form));
+      for (const field of NUMERIC) payload[field] = Number(payload[field]);
+
+      try {
+        const response = await fetch('/api/score', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        const body = await response.json();
+
+        if (!response.ok) {
+          const detail = typeof body.detail === 'string'
+            ? body.detail
+            : JSON.stringify(body.detail);
+          show('ko', `<h2>Erreur ${response.status}</h2><p>${detail}</p>`);
+          return;
+        }
+
+        const risky = body.prediction === 1;
+        show(risky ? 'ko' : 'ok', `
+          <h2>${risky ? 'Risque de défaut élevé' : 'Risque de défaut faible'}</h2>
+          <p>Probabilité de défaut : <strong>${(body.probability * 100).toFixed(1)} %</strong></p>
+          <p>Modèle : ${body.model_version} — requête ${body.request_id}</p>
+        `);
+      } catch (err) {
+        show('ko', `<h2>Service injoignable</h2><p>${err.message}</p>`);
+      } finally {
+        button.disabled = false;
+      }
     });
   </script>
 </body>
