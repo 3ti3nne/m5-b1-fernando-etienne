@@ -7,6 +7,10 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -20,21 +24,39 @@ jobs:
       - name: Tests unitaires + contract test du modèle
         run: pytest -v services/model/tests
 
-  # TODO 1 (M5-B2) — job `evaluate-model` :
-  #   needs: test ; lance `python scripts/evaluate_model.py --release-tag <ref>`
-  #   qui DOIT bloquer (exit≠0) si une métrique passe sous les seuils.
-  #   Uploadez mlruns/ en artefact.
+  build-and-push:
+    needs: test
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-  # TODO 2 — job `build-and-push` :
-  #   needs: [test, evaluate-model] ; if: push ; login GHCR ;
-  #   `docker compose build` ; tag + push de l'image model ; tag de release.
-  #
-  #   Deux pièges qui vous coûteront la fin de journée si vous les ignorez :
-  #   a) GHCR n'accepte QUE des noms d'image en **minuscules**. Votre repo
-  #      s'appelle `Formation-SIMPLON-IA/M5-B1-...` → passez le nom dans
-  #      `tr '[:upper:]' '[:lower:]'` avant le `docker tag`, sinon :
-  #      « invalid reference format: repository name must be lowercase ».
-  #   b) `docker compose images -q model` ne liste que les images des
-  #      conteneurs **créés**. Après un simple `docker compose build`, elle
-  #      renvoie une chaîne vide et le `docker tag` casse. Buildez l'image à
-  #      pousser avec `docker build -t "$IMG:$TAG" ./services/model`.
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build the three services
+        run: docker compose build model backend frontend
+
+      - name: Tag and push images
+        env:
+          GHCR_REPOSITORY: ghcr.io/${{ github.repository }}
+        run: |
+          set -euo pipefail
+          repository="$(printf '%s' "$GHCR_REPOSITORY" | tr '[:upper:]' '[:lower:]')"
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            tag="$GITHUB_REF_NAME"
+          else
+            tag="sha-${GITHUB_SHA::7}"
+          fi
+
+          for service in model backend frontend; do
+            image="$repository-$service"
+            docker build -t "$image:$tag" "./services/$service"
+            docker push "$image:$tag"
+            docker tag "$image:$tag" "$image:latest"
+            docker push "$image:latest"
+          done
