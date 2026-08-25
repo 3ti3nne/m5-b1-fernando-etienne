@@ -27,8 +27,7 @@
     "annual_inc",
     "dti",
     "delinq_2yrs",
-    "fico_range_low",
-    "revol_util"
+    "fico_range_low"
   ],
   "feature_columns_categorical": [
     "term",
