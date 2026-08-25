@@ -14,18 +14,37 @@ services:
       start_period: 20s
       retries: 3
 
-  # TODO 1 — service `backend` :
-  #   build ./services/backend, port 8001, env MODEL_URL=http://model:8000
-  #   + ALLOWED_ORIGINS, depends_on model (condition service_healthy),
-  #   healthcheck sur /health.
+  backend:
+    build: ./services/backend
+    ports:
+      - "8001:8001"
+    environment:
+      MODEL_URL: "http://model:8000"
+      ALLOWED_ORIGINS: "http://localhost:8088"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8001/health').status==200 else 1)"]
+      interval: 10s
+      timeout: 3s
+      start_period: 20s
+      retries: 3
+    depends_on:
+      model:
+        condition: service_healthy
 
-  # TODO 2 — service `frontend` :
-  #   build ./services/frontend, port hôte 8088 -> 80 (évite le conflit 8080),
-  #   depends_on backend (service_healthy), + son propre healthcheck
-  #   (le critère du brief est « les 3 services healthy », pas 2).
-  #   ⚠️ Dans l'image nginx, sondez `http://127.0.0.1/` et pas
-  #   `http://localhost/` : `listen 80;` ne bind que l'IPv4, et `localhost`
-  #   résout ::1 en premier → connection refused, service `unhealthy`.
+  frontend:
+    build: ./services/frontend
+    ports:
+      - "8088:80"
+    healthcheck:
+      # 127.0.0.1 et non localhost : `listen 80;` ne bind que l'IPv4.
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 3s
+      start_period: 5s
+      retries: 3
+    depends_on:
+      backend:
+        condition: service_healthy
 
   prometheus:
     image: prom/prometheus:v2.54.1
