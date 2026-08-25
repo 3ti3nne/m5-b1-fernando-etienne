@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pyrenex Crédit — Scoring risque</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; }
+    label { display: block; margin: .4rem 0 .1rem; font-size: .9rem; }
+    input, select { width: 100%; padding: .4rem; box-sizing: border-box; }
+    button { padding: .6rem 1.2rem; font-size: 1rem; cursor: pointer; }
+    #result { margin-top: 1rem; padding: 1rem; border-radius: 8px; display: none; }
+    .ok { background: #e6f4ea; } .ko { background: #fce8e6; }
+  </style>
+</head>
+<body>
+  <h1>Pyrenex Crédit — Évaluation du risque de défaut</h1>
+
+  <!-- TODO 1 — construire le formulaire avec les 14 champs de LoanApplication
+       (cf. services/*/app/schemas.py) : loan_amnt, int_rate, installment,
+       annual_inc, dti, delinq_2yrs, fico_range_low, revol_util (numériques)
+       + term, grade, home_ownership, verification_status, purpose, emp_length. -->
+  <form id="scoreForm">
+    <!-- … champs à compléter … -->
+    <button type="submit">Évaluer le risque</button>
+  </form>
+
+  <div id="result"></div>
+
+  <script>
+    const form = document.getElementById('scoreForm');
+    const result = document.getElementById('result');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      // TODO 2 — construire le payload JSON depuis le formulaire
+      //   (penser à convertir les champs numériques en Number).
+      // TODO 3 — POST vers /api/score (même origine grâce au proxy nginx),
+      //   afficher prediction + probability, gérer les erreurs.
+    });
+  </script>
+</body>
+</html>

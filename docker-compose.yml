@@ -1,0 +1,50 @@
+# docker-compose.yml — SQUELETTE À COMPLÉTER
+# Le service `model`, `prometheus` et `grafana` sont câblés.
+# À vous d'ajouter `backend` et `frontend` (cf. TODO).
+
+services:
+  model:
+    build: ./services/model
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').status==200 else 1)"]
+      interval: 10s
+      timeout: 3s
+      start_period: 20s
+      retries: 3
+
+  # TODO 1 — service `backend` :
+  #   build ./services/backend, port 8001, env MODEL_URL=http://model:8000
+  #   + ALLOWED_ORIGINS, depends_on model (condition service_healthy),
+  #   healthcheck sur /health.
+
+  # TODO 2 — service `frontend` :
+  #   build ./services/frontend, port hôte 8088 -> 80 (évite le conflit 8080),
+  #   depends_on backend (service_healthy), + son propre healthcheck
+  #   (le critère du brief est « les 3 services healthy », pas 2).
+  #   ⚠️ Dans l'image nginx, sondez `http://127.0.0.1/` et pas
+  #   `http://localhost/` : `listen 80;` ne bind que l'IPv4, et `localhost`
+  #   résout ::1 en premier → connection refused, service `unhealthy`.
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      - model
+
+  grafana:
+    image: grafana/grafana:11.2.2
+    ports:
+      - "3001:3000"            # 3001 hôte : évite le conflit 3000
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus

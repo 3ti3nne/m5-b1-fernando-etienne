@@ -1,0 +1,21 @@
+loan_amnt,term,int_rate,installment,grade,emp_length,home_ownership,annual_inc,verification_status,purpose,dti,delinq_2yrs,fico_range_low,revol_util,loan_status
+18900,36 months,12.51,632.36,C,10+ years,MORTGAGE,26900,Verified,small_business,13.12,0,707,69.5,Charged Off
+5300,60 months,17.01,131.75,D,1 year,RENT,46900,Not Verified,debt_consolidation,30.52,0,693,27.4,Charged Off
+6500,60 months,19.64,170.91,D,10+ years,MORTGAGE,63000,Not Verified,home_improvement,11.66,1,700,67.7,Charged Off
+6300,36 months,23.63,245.94,F,10+ years,MORTGAGE,88500,Source Verified,medical,8.86,0,661,58.7,Charged Off
+21700,36 months,18.99,795.33,E,10+ years,RENT,99100,Not Verified,debt_consolidation,26.68,1,656,54.9,Charged Off
+15800,60 months,21.25,429.67,E,1 year,RENT,72100,Not Verified,debt_consolidation,6.91,0,665,12.9,Charged Off
+6100,60 months,14.93,144.89,C,4 years,MORTGAGE,67200,Source Verified,debt_consolidation,20.94,0,686,56.7,Charged Off
+14200,36 months,11.11,465.63,B,3 years,MORTGAGE,67100,Not Verified,credit_card,11.82,0,713,59.3,Charged Off
+9900,36 months,11.89,328.3,C,3 years,OWN,165700,Not Verified,debt_consolidation,35.65,0,676,62.6,Charged Off
+22500,60 months,12.89,510.68,C,10+ years,RENT,88500,Source Verified,small_business,14.51,1,703,15.0,Charged Off
+19500,36 months,15.32,679.03,C,2 years,RENT,70100,Not Verified,debt_consolidation,20.22,0,702,67.1,Charged Off
+25100,60 months,14.86,595.28,D,3 years,MORTGAGE,85200,Verified,credit_card,26.35,0,670,,Charged Off
+7800,36 months,14.19,267.31,C,7 years,MORTGAGE,77500,Verified,debt_consolidation,24.8,1,700,42.6,Charged Off
+8000,36 months,12.24,266.63,C,4 years,MORTGAGE,22300,Not Verified,small_business,10.38,0,687,64.0,Charged Off
+15500,60 months,15.42,372.17,D,3 years,RENT,17200,Not Verified,other,21.58,1,689,72.9,Charged Off
+5300,36 months,7.99,166.06,A,5 years,RENT,35200,Not Verified,credit_card,20.94,2,740,64.6,Charged Off
+13600,60 months,11.84,301.43,B,10+ years,MORTGAGE,51400,Source Verified,other,20.07,0,691,78.1,Charged Off
+22600,36 months,21.05,852.04,E,1 year,RENT,15800,Source Verified,debt_consolidation,14.69,0,662,48.0,Charged Off
+7100,36 months,18.48,258.39,D,10+ years,MORTGAGE,63400,Source Verified,major_purchase,21.12,0,684,58.2,Charged Off
+13900,60 months,16.19,339.43,D,3 years,MORTGAGE,80000,Verified,credit_card,5.17,1,684,61.4,Charged Off

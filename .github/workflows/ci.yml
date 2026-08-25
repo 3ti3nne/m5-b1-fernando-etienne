@@ -1,0 +1,40 @@
+name: CI/CD Pyrenex Prod
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install model deps
+        run: pip install -r services/model/requirements.txt pytest httpx
+      - name: Tests unitaires + contract test du modèle
+        run: pytest -v services/model/tests
+
+  # TODO 1 (M5-B2) — job `evaluate-model` :
+  #   needs: test ; lance `python scripts/evaluate_model.py --release-tag <ref>`
+  #   qui DOIT bloquer (exit≠0) si une métrique passe sous les seuils.
+  #   Uploadez mlruns/ en artefact.
+
+  # TODO 2 — job `build-and-push` :
+  #   needs: [test, evaluate-model] ; if: push ; login GHCR ;
+  #   `docker compose build` ; tag + push de l'image model ; tag de release.
+  #
+  #   Deux pièges qui vous coûteront la fin de journée si vous les ignorez :
+  #   a) GHCR n'accepte QUE des noms d'image en **minuscules**. Votre repo
+  #      s'appelle `Formation-SIMPLON-IA/M5-B1-...` → passez le nom dans
+  #      `tr '[:upper:]' '[:lower:]'` avant le `docker tag`, sinon :
+  #      « invalid reference format: repository name must be lowercase ».
+  #   b) `docker compose images -q model` ne liste que les images des
+  #      conteneurs **créés**. Après un simple `docker compose build`, elle
+  #      renvoie une chaîne vide et le `docker tag` casse. Buildez l'image à
+  #      pousser avec `docker build -t "$IMG:$TAG" ./services/model`.

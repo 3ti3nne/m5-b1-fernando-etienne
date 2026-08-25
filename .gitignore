@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# Logs runtime
+logs/*.log
+logs/*.log.gz
+
+# MLflow tracking local (uploadé en artefact CI, pas committé)
+mlruns/
+
+# OS / IDE
+.DS_Store
+.idea/
+*.swp
